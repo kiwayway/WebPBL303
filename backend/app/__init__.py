@@ -19,6 +19,14 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    @jwt.unauthorized_loader
+    @jwt.invalid_token_loader
+    def _unauthorized(reason):
+        return {"message": "Belum login atau sesi tidak valid"}, 401
+
+    @jwt.expired_token_loader
+    def _expired(header, payload):
+        return {"message": "Sesi sudah habis, silakan login lagi"}, 401
     limiter.init_app(app)
 
     from . import models  # noqa: F401  (supaya tabel terdeteksi migrasi)
@@ -28,4 +36,6 @@ def create_app():
 
     api = Api(app)
     api.register_blueprint(health_bp)
+    from .auth import auth_bp
+    api.register_blueprint(auth_bp)
     return app
