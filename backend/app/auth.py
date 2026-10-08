@@ -8,10 +8,11 @@ from flask_jwt_extended import (
     unset_jwt_cookies,
 )
 from flask_smorest import Blueprint, abort
+from sqlalchemy.exc import IntegrityError
 
 from .extensions import db, limiter
-from .models import User, ph
-from .schemas import LoginSchema, UserSchema
+from .models import Role, User, ph
+from .schemas import LoginSchema, RegisterSchema, UserSchema
 
 auth_bp = Blueprint(
     "auth", __name__, url_prefix="/api/v1/auth", description="Login dan sesi"
@@ -26,6 +27,27 @@ def _fake_verify(password):
         ph.verify(_DUMMY_HASH, password)
     except VerifyMismatchError:
         pass
+
+
+@auth_bp.route("/register", methods=["POST"])
+@limiter.limit("10 per hour")
+@auth_bp.arguments(RegisterSchema)
+@auth_bp.response(201, UserSchema)
+def register(data):
+    """Daftar akun baru (customer atau seller)"""
+    email = data["email"].strip().lower()
+    if User.query.filter_by(email=email).first():
+        abort(409, message="Email sudah terdaftar")
+
+    user = User(email=email, name=data["name"].strip(), role=Role(data["role"]))
+    user.set_password(data["password"])
+    db.session.add(user)
+    try:
+        db.session.commit()
+    except IntegrityError:  # dua request bersamaan dengan email sama
+        db.session.rollback()
+        abort(409, message="Email sudah terdaftar")
+    return user
 
 
 @auth_bp.route("/login", methods=["POST"])

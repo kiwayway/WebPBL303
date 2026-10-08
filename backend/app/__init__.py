@@ -28,6 +28,14 @@ def create_app():
     def _expired(header, payload):
         return {"message": "Sesi sudah habis, silakan login lagi"}, 401
     limiter.init_app(app)
+    
+    from flask_cors import CORS
+    CORS(
+        app,
+        origins=app.config["CORS_ORIGINS"],
+        supports_credentials=True,
+        allow_headers=["Content-Type", "X-CSRF-TOKEN"],
+    )
 
     from . import models  # noqa: F401  (supaya tabel terdeteksi migrasi)
     from .cli import register_cli

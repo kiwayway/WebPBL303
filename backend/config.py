@@ -11,6 +11,7 @@ class Config:
     JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
     SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
 
     # Upload
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB
